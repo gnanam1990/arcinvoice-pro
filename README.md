@@ -21,7 +21,7 @@ The repository includes a **frontend shell** (App Router UI) and a **backend dat
 
 ## Requirements
 
-- Node.js **20+**
+- Node.js **22.13+**
 - pnpm **9+** (recommended: use the `packageManager` field via [Corepack](https://nodejs.org/api/corepack.html))
 - PostgreSQL **14+** (local or hosted)
 
