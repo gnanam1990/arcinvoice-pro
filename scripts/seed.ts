@@ -84,6 +84,7 @@ async function main() {
         company: "[DEMO] Horizon Labs Inc.",
         city: "Austin",
         country: "US",
+        walletAddress: "0x1111111111111111111111111111111111111111",
       },
       {
         name: "[DEMO] Cedar & Co",
@@ -91,6 +92,7 @@ async function main() {
         company: "[DEMO] Cedar & Co",
         city: "Portland",
         country: "US",
+        walletAddress: "0x2222222222222222222222222222222222222222",
       },
       {
         name: "[DEMO] Bluebird Media",
@@ -98,6 +100,7 @@ async function main() {
         company: "[DEMO] Bluebird Media LLC",
         city: "Brooklyn",
         country: "US",
+        walletAddress: null as string | null,
       },
     ] as const;
 
@@ -111,6 +114,8 @@ async function main() {
           company: c.company,
           city: c.city,
           country: c.country,
+          walletAddress: c.walletAddress,
+          status: "active" as const,
           notes: DEMO.label,
           updatedAt: new Date(),
         })),
@@ -252,6 +257,7 @@ async function main() {
                 customerId: customer.id,
                 name: customer.name,
                 email: customer.email,
+                walletAddress: customer.walletAddress,
                 company: customer.company,
                 addressLine1: customer.addressLine1,
                 addressLine2: customer.addressLine2,

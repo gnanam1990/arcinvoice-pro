@@ -24,6 +24,7 @@ export type CustomerSnapshot = {
   customerId: string;
   name: string;
   email: string;
+  walletAddress: string | null;
   company: string | null;
   addressLine1: string | null;
   addressLine2: string | null;

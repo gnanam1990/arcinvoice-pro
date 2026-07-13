@@ -75,8 +75,9 @@ export function Button(props: ButtonProps) {
   }
 
   const buttonProps = rest as ButtonHTMLAttributes<HTMLButtonElement>;
+  const { type: buttonType = "button", ...buttonRest } = buttonProps;
   return (
-    <button type={buttonProps.type ?? "button"} className={classes} {...buttonProps}>
+    <button type={buttonType} className={classes} {...buttonRest}>
       {children}
     </button>
   );

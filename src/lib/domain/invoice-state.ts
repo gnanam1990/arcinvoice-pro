@@ -49,7 +49,8 @@ export function canTransitionInvoiceStatus(
   from: InvoiceStatus,
   to: InvoiceStatus,
 ): boolean {
-  if (from === to) return true;
+  // Distinct transitions only — same-status no-ops are handled by callers.
+  if (from === to) return false;
   return TRANSITIONS[from].includes(to);
 }
 
@@ -152,7 +153,10 @@ export function statusIfOverdue(input: {
   }
 
   if (now.getTime() > due.getTime()) {
-    if (canTransitionInvoiceStatus(currentStatus, "overdue") || currentStatus === "overdue") {
+    if (
+      currentStatus === "overdue" ||
+      canTransitionInvoiceStatus(currentStatus, "overdue")
+    ) {
       return "overdue";
     }
   }

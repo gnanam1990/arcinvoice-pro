@@ -1,184 +1,152 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { MetricCard } from "@/components/ui/metric-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { OrgUnavailable } from "@/components/dashboard/org-guard";
+import { loadDashboardOverview } from "@/lib/dashboard-data";
+import { formatMoney, invoiceStatusLabel } from "@/lib/format";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const data = await loadDashboardOverview();
+  if (!data.ok) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Overview" />
+        <OrgUnavailable error={data.error} />
+      </div>
+    );
+  }
+
+  const { org, customers, invoices, allInvoices } = data;
+  const outstanding = allInvoices
+    .filter((i) =>
+      ["issued", "partially_paid", "overdue"].includes(i.status),
+    )
+    .reduce((sum, i) => sum + i.amountDue, 0);
+  const collected = allInvoices.reduce((sum, i) => sum + i.amountPaid, 0);
+  const drafts = allInvoices.filter((i) => i.status === "draft").length;
+
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Overview"
-        title="Invoices"
-        description="Your workspace is ready. Create the first invoice when product logic lands — this view is a polished empty state with demo metrics only."
+        eyebrow={org.name}
+        title="Overview"
+        description="Live data from PostgreSQL for this organization. Wallet settlement is not connected yet."
         actions={
           <>
-            <Button variant="outline" size="md" type="button" disabled>
-              Import
+            <Button href="/dashboard/customers/new" variant="outline">
+              New customer
             </Button>
-            <Button size="md" type="button" aria-label="Create invoice (coming soon)">
-              <PlusIcon />
-              Create invoice
-            </Button>
+            <Button href="/dashboard/invoices/new">Create invoice</Button>
           </>
         }
       />
 
-      <section aria-labelledby="metrics-heading" className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2
-            id="metrics-heading"
-            className="text-sm font-semibold text-foreground"
-          >
-            Revenue snapshot
-          </h2>
-          <StatusBadge tone="warning" label="Demo data" showDot={false} />
-        </div>
-        <p className="text-xs text-muted">
-          Placeholder figures for layout review. Not connected to a database or
-          chain.
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            demo
-            label="Collected (30d)"
-            value="$0.00"
-            hint="No settled invoices"
-            trend="—"
-            trendTone="neutral"
-            icon={<CurrencyIcon />}
-          />
-          <MetricCard
-            demo
-            label="Outstanding"
-            value="$0.00"
-            hint="Awaiting payments"
-            trend="—"
-            trendTone="neutral"
-            icon={<ClockIcon />}
-          />
-          <MetricCard
-            demo
-            label="Drafts"
-            value="0"
-            hint="In progress"
-            trend="—"
-            trendTone="neutral"
-            icon={<DraftIcon />}
-          />
-          <MetricCard
-            demo
-            label="Avg. days to pay"
-            value="—"
-            hint="Insufficient data"
-            trend="—"
-            trendTone="neutral"
-            icon={<ChartIcon />}
-          />
-        </div>
-      </section>
-
-      <section id="invoices" aria-labelledby="invoice-list-heading" className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2
-            id="invoice-list-heading"
-            className="text-sm font-semibold text-foreground"
-          >
-            Recent invoices
-          </h2>
-          <span className="font-mono text-[11px] text-muted">0 records</span>
-        </div>
-
-        <EmptyState
-          title="No invoices yet"
-          description="When you create invoices, they will appear here with status, amounts, and customer context. Wallet settlement and database persistence are intentionally not included in this foundation."
-          action={
-            <>
-              <Button type="button" size="md">
-                <PlusIcon />
-                Create invoice
-              </Button>
-              <Button type="button" variant="outline" size="md" disabled>
-                View sample (soon)
-              </Button>
-            </>
-          }
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Collected"
+          value={formatMoney(collected)}
+          hint="Sum of amount paid"
         />
-      </section>
+        <MetricCard
+          label="Outstanding"
+          value={formatMoney(outstanding)}
+          hint="Open balances"
+        />
+        <MetricCard label="Drafts" value={String(drafts)} hint="Editable" />
+        <MetricCard
+          label="Active customers"
+          value={String(customers.total)}
+          hint="Not archived"
+        />
+      </div>
 
-      <section
-        id="customers"
-        className="grid gap-4 lg:grid-cols-2"
-        aria-label="Secondary placeholders"
-      >
+      <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-xs">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Customers</h3>
-            <StatusBadge tone="neutral" label="Empty" />
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Recent invoices</h2>
+            <Link
+              href="/dashboard/invoices"
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              View all
+            </Link>
           </div>
-          <p className="mt-2 text-sm text-muted">
-            Customer directory will live here. No records in this scaffold.
-          </p>
+          {invoices.items.length === 0 ? (
+            <EmptyState
+              title="No invoices"
+              description="Create your first draft invoice."
+              action={
+                <Button href="/dashboard/invoices/new" size="sm">
+                  Create invoice
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border">
+              {invoices.items.map((inv) => (
+                <li
+                  key={inv.id}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                >
+                  <Link
+                    href={`/dashboard/invoices/${inv.id}`}
+                    className="font-medium hover:text-accent"
+                  >
+                    {inv.number}
+                  </Link>
+                  <span className="font-mono text-xs text-muted">
+                    {formatMoney(inv.total, inv.currency, inv.tokenDecimals)}
+                  </span>
+                  <StatusBadge
+                    tone="neutral"
+                    label={invoiceStatusLabel(inv.status)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        <div
-          id="payments"
-          className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-xs"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Payments</h3>
-            <StatusBadge tone="offline" label="Not connected" />
+
+        <div className="rounded-[var(--radius-xl)] border border-border bg-surface p-5 shadow-xs">
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Customers</h2>
+            <Link
+              href="/dashboard/customers"
+              className="text-xs font-medium text-accent hover:underline"
+            >
+              View all
+            </Link>
           </div>
-          <p className="mt-2 text-sm text-muted">
-            Payment rails and Arc transactions are out of scope for this UI
-            foundation.
-          </p>
+          {customers.items.length === 0 ? (
+            <EmptyState
+              title="No customers"
+              description="Add a customer to start invoicing."
+              action={
+                <Button href="/dashboard/customers/new" size="sm">
+                  New customer
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border">
+              {customers.items.map((c) => (
+                <li key={c.id} className="py-3 text-sm">
+                  <Link
+                    href={`/dashboard/customers/${c.id}`}
+                    className="font-medium hover:text-accent"
+                  >
+                    {c.name}
+                  </Link>
+                  <p className="text-xs text-muted">{c.email}</p>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
     </div>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CurrencyIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 7v10M9.5 9.5c.5-1 1.5-1.5 2.5-1.5s2 .5 2.5 1.5-1 2-2.5 2.5-3 1-2.5 2.5 1.5 1.5 2.5 1.5 2-.5 2.5-1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 8v4l2.5 2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DraftIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path d="M8 3h6l4 4v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" strokeLinejoin="round" />
-      <path d="M14 3v4h4" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ChartIcon() {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
-      <path d="M4 19V5M4 19h16" strokeLinecap="round" />
-      <path d="M8 15l3-4 3 2 4-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

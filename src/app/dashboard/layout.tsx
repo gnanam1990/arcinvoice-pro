@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: "ArcInvoice Pro dashboard — invoices, metrics, and workspace shell.",
 };
 
+/** Dashboard pages query PostgreSQL on each request. */
+export const dynamic = "force-dynamic";
+
 export default function DashboardLayout({
   children,
 }: {

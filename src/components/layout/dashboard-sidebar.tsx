@@ -17,8 +17,8 @@ type NavItemConfig = {
 
 const primaryNav: NavItemConfig[] = [
   { href: "/dashboard", label: "Overview", icon: OverviewIcon, match: "exact" },
-  { href: "/dashboard#invoices", label: "Invoices", icon: InvoiceIcon },
-  { href: "/dashboard#customers", label: "Customers", icon: CustomersIcon },
+  { href: "/dashboard/invoices", label: "Invoices", icon: InvoiceIcon, match: "prefix" },
+  { href: "/dashboard/customers", label: "Customers", icon: CustomersIcon, match: "prefix" },
   { href: "/dashboard#payments", label: "Payments", icon: PaymentsIcon },
 ];
 
@@ -97,6 +97,9 @@ export function DashboardSidebar({
 function isActive(pathname: string, item: NavItemConfig): boolean {
   if (item.href.includes("#")) return false;
   if (item.match === "exact") return pathname === item.href;
+  if (item.match === "prefix") {
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 

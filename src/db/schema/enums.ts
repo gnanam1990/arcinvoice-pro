@@ -6,6 +6,11 @@ export const memberRoleEnum = pgEnum("member_role", [
   "member",
 ]);
 
+export const customerStatusEnum = pgEnum("customer_status", [
+  "active",
+  "archived",
+]);
+
 export const invoiceStatusEnum = pgEnum("invoice_status", [
   "draft",
   "issued",
