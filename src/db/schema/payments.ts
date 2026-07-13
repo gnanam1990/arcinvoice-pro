@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -15,6 +16,11 @@ import {
   paymentIntentStatusEnum,
 } from "./enums";
 
+/**
+ * Server-authoritative payment preparation record.
+ * Created before any wallet transaction is requested.
+ * Does not broadcast or settle payments.
+ */
 export const paymentIntents = pgTable(
   "payment_intents",
   {
@@ -25,11 +31,23 @@ export const paymentIntents = pgTable(
     invoiceId: uuid("invoice_id")
       .notNull()
       .references(() => invoices.id, { onDelete: "cascade" }),
+    /** Amount in invoice integer base units (server-recalculated). */
     amount: integer("amount").notNull(),
     currency: text("currency").notNull(),
     tokenDecimals: integer("token_decimals").notNull().default(2),
     status: paymentIntentStatusEnum("status").notNull().default("pending"),
-    /** Placeholder for future wallet/chain wiring — no logic yet. */
+    /** Client-supplied key to prevent duplicate active intents. */
+    idempotencyKey: text("idempotency_key").notNull(),
+    /** Checksummed payer wallet (connected wallet). */
+    payerAddress: text("payer_address"),
+    /** Checksummed merchant payout from invoice snapshot. */
+    recipientAddress: text("recipient_address").notNull(),
+    chainId: integer("chain_id").notNull().default(5042002),
+    network: text("network").notNull().default("arc-testnet"),
+    memo: text("memo"),
+    invoiceNumber: text("invoice_number").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    /** Placeholder for future wallet/chain wiring — no tx yet. */
     metadata: text("metadata"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -42,12 +60,19 @@ export const paymentIntents = pgTable(
     index("payment_intents_invoice_idx").on(table.invoiceId),
     index("payment_intents_org_idx").on(table.organizationId),
     index("payment_intents_status_idx").on(table.status),
+    uniqueIndex("payment_intents_idempotency_uidx").on(table.idempotencyKey),
+    index("payment_intents_active_lookup_idx").on(
+      table.invoiceId,
+      table.payerAddress,
+      table.amount,
+      table.status,
+    ),
     check("payment_intents_amount_positive", sql`${table.amount} > 0`),
   ],
 );
 
 /**
- * On-chain payment record shell. Stores references only — no wallet or tx logic.
+ * On-chain payment record shell. Stores references only — no wallet execution yet.
  */
 export const onchainPayments = pgTable(
   "onchain_payments",
@@ -57,7 +82,6 @@ export const onchainPayments = pgTable(
       .notNull()
       .references(() => paymentIntents.id, { onDelete: "cascade" }),
     network: text("network").notNull().default("arc-testnet"),
-    /** Optional future tx hash — not populated by wallet execution yet. */
     txHash: text("tx_hash"),
     amount: integer("amount").notNull(),
     status: onchainPaymentStatusEnum("status").notNull().default("pending"),

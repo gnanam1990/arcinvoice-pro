@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PublicInvoiceDocument } from "@/components/public/public-invoice-view";
+import { PaymentPreparePanel } from "@/components/wallet/payment-prepare-panel";
+import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
+import { ArcTestnetBadge } from "@/components/wallet/arc-testnet-badge";
 import { loadPublicInvoice } from "@/lib/public/load-public-invoice";
 import { LinkCopiedAudit } from "@/components/public/link-copied-audit";
 
@@ -26,7 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PublicPayPage({ params }: Props) {
   const { token } = await params;
-  const result = await loadPublicInvoice(decodeURIComponent(token));
+  const decoded = decodeURIComponent(token);
+  const result = await loadPublicInvoice(decoded);
 
   if (!result.ok) {
     if (result.reason === "rate_limited") {
@@ -45,19 +49,34 @@ export default async function PublicPayPage({ params }: Props) {
     notFound();
   }
 
+  const { view } = result;
+
   return (
     <div className="min-h-full bg-background px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto mb-6 flex max-w-3xl items-center justify-between gap-3">
-        <p className="text-sm font-semibold tracking-tight text-foreground">
-          ArcInvoice Pro
-        </p>
-        <p className="text-xs text-muted">Secure public invoice</p>
+      <div className="mx-auto mb-6 flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold tracking-tight text-foreground">
+            ArcInvoice Pro
+          </p>
+          <ArcTestnetBadge className="mt-1" />
+        </div>
+        <ConnectWalletButton />
       </div>
-      <PublicInvoiceDocument
-        view={result.view}
-        token={decodeURIComponent(token)}
-      />
-      <LinkCopiedAudit invoiceNumber={result.view.invoiceNumber} token={token} />
+      <PublicInvoiceDocument view={view} token={decoded} />
+      <div className="mx-auto max-w-3xl">
+        <PaymentPreparePanel
+          publicToken={decoded}
+          invoiceNumber={view.invoiceNumber}
+          status={view.status}
+          amountDue={view.amountDue}
+          currency={view.currency}
+          tokenDecimals={view.tokenDecimals}
+          memo={view.memo}
+          merchantWallet={view.merchant.walletAddress}
+          allowPartialPayments={view.allowPartialPayments}
+        />
+      </div>
+      <LinkCopiedAudit invoiceNumber={view.invoiceNumber} token={token} />
     </div>
   );
 }

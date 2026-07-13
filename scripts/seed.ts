@@ -280,6 +280,14 @@ async function main() {
                 amount: calculateLineAmount(line.quantity, line.unitPrice),
                 position: index,
               })),
+              merchant: {
+                walletAddress:
+                  org.merchantWalletAddress ??
+                  "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                organizationName: org.name,
+                capturedAt: new Date().toISOString(),
+              },
+              allowPartialPayments: true,
               capturedAt: new Date().toISOString(),
             }
           : null;
@@ -385,6 +393,14 @@ async function main() {
           currency: "USD",
           tokenDecimals: 2,
           status: "settled",
+          idempotencyKey: `demo-seed-${partial.id}`,
+          recipientAddress:
+            org.merchantWalletAddress ??
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          invoiceNumber: partial.number,
+          chainId: 5042002,
+          network: "arc-testnet",
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
           metadata: JSON.stringify({ demo: true, label: DEMO.label }),
           updatedAt: new Date(),
         })

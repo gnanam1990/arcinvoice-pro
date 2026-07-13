@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
+import { cookieToInitialState } from "wagmi";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
+import { WalletProvider } from "@/components/wallet/wallet-provider";
+import { wagmiConfig } from "@/lib/wallet/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,11 +38,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const hdrs = await headers();
+  const cookie = hdrs.get("cookie") ?? undefined;
+  // Hydrate prior connection from cookies only — never touches window.ethereum on the server.
+  const initialState = cookieToInitialState(wagmiConfig, cookie);
+
   return (
     <html
       lang="en"
@@ -50,7 +59,9 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <ThemeProvider>{children}</ThemeProvider>
+        <WalletProvider initialState={initialState}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </WalletProvider>
       </body>
     </html>
   );

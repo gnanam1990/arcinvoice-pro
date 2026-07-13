@@ -125,6 +125,7 @@ export const invoiceCreateSchema = z.object({
   tokenDecimals: z.number().int().min(0).max(18).default(2),
   tax: nonNegativeMoneyIntSchema.default(0),
   discount: nonNegativeMoneyIntSchema.default(0),
+  allowPartialPayments: z.boolean().default(true),
   issueDate: z.string().date().nullable().optional(),
   dueDate: z.string().date().nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),

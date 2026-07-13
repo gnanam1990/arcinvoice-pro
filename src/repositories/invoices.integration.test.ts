@@ -23,7 +23,12 @@ describe.runIf(hasDb)("InvoiceRepository integration", () => {
     const slug = `test-inv-${Date.now()}`;
     const [org] = await client.db
       .insert(organizations)
-      .values({ name: "Test Invoices Org", slug, updatedAt: new Date() })
+      .values({
+        name: "Test Invoices Org",
+        slug,
+        merchantWalletAddress: "0xcccccccccccccccccccccccccccccccccccccccc",
+        updatedAt: new Date(),
+      })
       .returning();
     orgId = org!.id;
     const customers = new CustomerRepository(client.db);

@@ -1,8 +1,8 @@
 "use client";
 
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { WalletBadge } from "@/components/ui/wallet-badge";
-import { NetworkBadge } from "@/components/ui/network-badge";
+import { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
+import { ArcTestnetBadge } from "@/components/wallet/arc-testnet-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
@@ -51,13 +51,13 @@ export function DashboardTopbar({
 
       <div className="flex flex-wrap items-center justify-end gap-2">
         <StatusBadge
-          tone="pending"
-          label="Scaffold"
+          tone="online"
+          label="Live data"
           className="hidden md:inline-flex"
         />
-        <NetworkBadge network="demo" compact className="hidden sm:inline-flex" />
+        <ArcTestnetBadge className="hidden lg:inline-flex" />
         <ThemeToggle />
-        <WalletBadge />
+        <ConnectWalletButton className="hidden sm:flex" showNetwork={false} />
       </div>
     </header>
   );

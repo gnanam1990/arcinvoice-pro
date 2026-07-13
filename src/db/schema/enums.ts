@@ -22,10 +22,13 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
 
 export const paymentIntentStatusEnum = pgEnum("payment_intent_status", [
   "pending",
+  "ready",
+  "expired",
+  "cancelled",
+  "failed",
   "submitted",
   "confirming",
   "settled",
-  "failed",
   "action_required",
 ]);
 
@@ -56,4 +59,8 @@ export const auditActionEnum = pgEnum("audit_action", [
   "link_copied",
   "public_viewed",
   "receipt_created",
+  "merchant_wallet_updated",
+  "payment_intent_created",
+  "payment_intent_expired",
+  "payment_intent_cancelled",
 ]);

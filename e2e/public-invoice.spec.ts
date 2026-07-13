@@ -80,7 +80,9 @@ test.describe("Public invoice experience", () => {
 
     // Key actions remain available on mobile
     await expect(page.getByRole("button", { name: /Copy secure link/i })).toBeVisible();
-    await expect(page.getByText("Amount due", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("article").getByText("Amount due", { exact: true }),
+    ).toBeVisible();
   });
 
   test("invalid token shows not found", async ({ page }) => {

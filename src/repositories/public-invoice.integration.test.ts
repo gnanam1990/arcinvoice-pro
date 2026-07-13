@@ -107,6 +107,12 @@ describe.runIf(hasDb)("Public invoice & receipt integration", () => {
         currency: "USD",
         tokenDecimals: 2,
         status: "settled",
+        idempotencyKey: `test-${invoice.id}-400`,
+        recipientAddress: "0xcccccccccccccccccccccccccccccccccccccccc",
+        invoiceNumber: invoice.number,
+        chainId: 5042002,
+        network: "arc-testnet",
+        expiresAt: new Date(Date.now() + 60_000),
         updatedAt: new Date(),
       })
       .returning();

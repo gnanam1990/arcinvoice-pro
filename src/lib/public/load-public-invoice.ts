@@ -85,6 +85,18 @@ export async function loadPublicInvoice(
     return { ok: false, reason: "not_found" };
   }
 
+  // Prefer immutable merchant wallet from issue snapshot.
+  // Fall back to live org wallet only when snapshot predates merchant freeze.
+  const snapshotWallet = snapshot.merchant?.walletAddress ?? null;
+  const merchantWallet =
+    snapshotWallet ??
+    row.merchantWallet ??
+    getMerchantDefaultWallet();
+
+  const canPreparePayment =
+    ["issued", "partially_paid", "overdue"].includes(row.invoice.status) &&
+    row.invoice.amountDue > 0;
+
   const view: PublicInvoiceView = {
     invoiceNumber: row.invoice.number,
     status: row.invoice.status,
@@ -100,15 +112,17 @@ export async function loadPublicInvoice(
     dueDate: row.invoice.dueDate,
     memo: row.invoice.memo,
     merchant: {
-      name: row.merchantName,
+      name: snapshot.merchant?.organizationName ?? row.merchantName,
       tagline: row.brandingTagline,
-      walletAddress:
-        row.merchantWallet ?? getMerchantDefaultWallet(),
+      walletAddress: merchantWallet,
     },
     customer: toPublicCustomer(snapshot.customer),
     lines: toPublicLines(snapshot.lines),
     networkLabel: getPublicNetworkLabel(),
     isTestnet: true,
+    allowPartialPayments:
+      snapshot.allowPartialPayments ?? row.invoice.allowPartialPayments,
+    canPreparePayment,
   };
 
   // Privacy-safe public view audit — no IP, no user agent

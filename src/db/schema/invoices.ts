@@ -46,9 +46,18 @@ export type LineItemSnapshot = {
   position: number;
 };
 
+export type MerchantWalletSnapshot = {
+  walletAddress: string;
+  organizationName: string;
+  capturedAt: string;
+};
+
 export type InvoiceSnapshot = {
   customer: CustomerSnapshot;
   lines: LineItemSnapshot[];
+  /** Frozen merchant payout wallet at issue — never inherits later org changes. */
+  merchant: MerchantWalletSnapshot | null;
+  allowPartialPayments: boolean;
   capturedAt: string;
 };
 
@@ -84,6 +93,10 @@ export const invoices = pgTable(
      */
     overpaymentAmount: integer("overpayment_amount").notNull().default(0),
     hasOverpayment: boolean("has_overpayment").notNull().default(false),
+    /** When true, public payment prep may use amount < amountDue. */
+    allowPartialPayments: boolean("allow_partial_payments")
+      .notNull()
+      .default(true),
     issueDate: date("issue_date"),
     dueDate: date("due_date"),
     notes: text("notes"),

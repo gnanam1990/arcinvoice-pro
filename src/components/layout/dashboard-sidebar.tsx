@@ -23,7 +23,7 @@ const primaryNav: NavItemConfig[] = [
 ];
 
 const secondaryNav: NavItemConfig[] = [
-  { href: "/dashboard#settings", label: "Settings", icon: SettingsIcon },
+  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon, match: "prefix" },
   { href: "/", label: "Marketing site", icon: HomeIcon, match: "exact" },
 ];
 

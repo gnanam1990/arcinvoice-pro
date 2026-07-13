@@ -118,9 +118,37 @@ Seeds **one organization**, **three customers**, and **five invoices**, plus rel
 
 ```bash
 pnpm test
+pnpm test:e2e
 ```
 
-Unit tests cover **integer amount calculations** and **invoice state transitions** (no database required).
+Unit/integration tests cover amount calculations, invoice state transitions, Arc unit systems, and payment-intent preparation. Playwright covers UI flows (including mocked wallet connect).
+
+## Arc Testnet wallet & payment preparation
+
+| Setting | Default |
+| --- | --- |
+| Chain ID | `5042002` |
+| RPC | `https://rpc.testnet.arc.network` (`NEXT_PUBLIC_ARC_RPC_URL`) |
+| Explorer | `https://testnet.arcscan.app` (`NEXT_PUBLIC_ARC_EXPLORER_URL`) |
+| Faucet | `https://faucet.circle.com` (`NEXT_PUBLIC_ARC_FAUCET_URL`) |
+| Native gas | **USDC** (18-decimal balance units) — never ETH |
+| ERC-20 USDC interface | 6 decimals (kept separate from native units) |
+
+- Connect injected EVM wallets via **Wagmi + Viem** (no private keys stored).
+- Public invoices at `/pay/[token]` can **prepare** a server-side `PaymentIntent` (no broadcast / no receipt yet).
+- Configure merchant payout under **Dashboard → Settings** (signed wallet confirmation).
+- Issued invoices freeze the merchant payout wallet in `issuedSnapshot.merchant`.
+
+### Environment variables (Arc)
+
+```bash
+NEXT_PUBLIC_ARC_RPC_URL=https://rpc.testnet.arc.network
+NEXT_PUBLIC_ARC_EXPLORER_URL=https://testnet.arcscan.app
+NEXT_PUBLIC_ARC_FAUCET_URL=https://faucet.circle.com
+NEXT_PUBLIC_ARC_NETWORK_LABEL=Arc Testnet
+```
+
+See [`.env.example`](./.env.example) for the full list.
 
 ## Data model (backend foundation)
 

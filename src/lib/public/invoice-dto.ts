@@ -49,6 +49,9 @@ export type PublicInvoiceView = {
   lines: PublicLineView[];
   networkLabel: string;
   isTestnet: boolean;
+  allowPartialPayments: boolean;
+  /** True when status can prepare a payment (not paid/cancelled/draft). */
+  canPreparePayment: boolean;
 };
 
 export const PUBLIC_VIEWABLE_STATUSES = [

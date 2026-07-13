@@ -5,12 +5,14 @@ import {
   customers,
   invoiceLines,
   invoices,
+  organizations,
   paymentIntents,
   receipts,
   type CustomerSnapshot,
   type InvoiceSnapshot,
   type LineItemSnapshot,
 } from "@/db/schema";
+import { normalizeAddress } from "@/lib/arc/addresses";
 import {
   calculateInvoiceTotals,
   calculateLineAmount,
@@ -145,6 +147,7 @@ export class InvoiceRepository {
           amountDue: totals.total,
           overpaymentAmount: 0,
           hasOverpayment: false,
+          allowPartialPayments: data.allowPartialPayments,
           issueDate: data.issueDate ?? null,
           dueDate: data.dueDate ?? null,
           notes: data.notes ?? null,
@@ -540,10 +543,40 @@ export class InvoiceRepository {
           position: line.position,
         }));
 
+        const [org] = await tx
+          .select()
+          .from(organizations)
+          .where(eq(organizations.id, organizationId))
+          .limit(1);
+
+        if (!org?.merchantWalletAddress) {
+          throw new AppError(
+            "Configure a merchant Arc payout wallet before issuing invoices",
+            "INVALID_STATE",
+          );
+        }
+
+        let merchantWallet: string;
+        try {
+          merchantWallet = normalizeAddress(org.merchantWalletAddress);
+        } catch {
+          throw new AppError(
+            "Merchant payout wallet address is invalid",
+            "INVALID_STATE",
+          );
+        }
+
+        const capturedAt = new Date().toISOString();
         const issuedSnapshot: InvoiceSnapshot = {
           customer: this.buildCustomerSnapshot(customer),
           lines: lineSnapshots,
-          capturedAt: new Date().toISOString(),
+          merchant: {
+            walletAddress: merchantWallet,
+            organizationName: org.name,
+            capturedAt,
+          },
+          allowPartialPayments: invoice.allowPartialPayments,
+          capturedAt,
         };
 
         const issueDate =
@@ -735,6 +768,10 @@ export class InvoiceRepository {
         toAppError(err);
       }
 
+      const recipient =
+        invoice.issuedSnapshot?.merchant?.walletAddress ??
+        "0x0000000000000000000000000000000000000001";
+
       const [intent] = await tx
         .insert(paymentIntents)
         .values({
@@ -744,6 +781,12 @@ export class InvoiceRepository {
           currency: data.currency,
           tokenDecimals: data.tokenDecimals,
           status: "pending",
+          idempotencyKey: `legacy-${invoice.id}-${Date.now()}`,
+          recipientAddress: recipient,
+          invoiceNumber: invoice.number,
+          chainId: 5042002,
+          network: "arc-testnet",
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
           updatedAt: new Date(),
         })
         .returning();
