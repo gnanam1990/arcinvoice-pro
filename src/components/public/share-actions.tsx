@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/public/copy-button";
 
@@ -12,6 +12,14 @@ type ShareActionsProps = {
   onLinkCopied?: () => void;
 };
 
+function subscribeToShareCapability() {
+  return () => {};
+}
+
+function getShareCapability() {
+  return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
+
 export function ShareActions({
   title,
   text,
@@ -20,8 +28,11 @@ export function ShareActions({
   onLinkCopied,
 }: ShareActionsProps) {
   const [shareNote, setShareNote] = useState<string | null>(null);
-  const canShare =
-    typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const canShare = useSyncExternalStore(
+    subscribeToShareCapability,
+    getShareCapability,
+    () => false,
+  );
 
   async function handleShare() {
     setShareNote(null);
