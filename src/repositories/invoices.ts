@@ -6,6 +6,7 @@ import {
   invoiceLines,
   invoices,
   paymentIntents,
+  receipts,
   type CustomerSnapshot,
   type InvoiceSnapshot,
   type LineItemSnapshot,
@@ -24,7 +25,10 @@ import {
   type InvoiceStatus,
   INVOICE_STATUSES,
 } from "@/lib/domain/invoice-state";
-import { generatePublicPaymentToken } from "@/lib/domain/public-token";
+import {
+  generatePublicPaymentToken,
+  hashToken,
+} from "@/lib/domain/public-token";
 import { AppError } from "@/lib/errors";
 import {
   invoiceCreateSchema,
@@ -145,7 +149,13 @@ export class InvoiceRepository {
           dueDate: data.dueDate ?? null,
           notes: data.notes ?? null,
           memo: data.memo ?? null,
-          publicPaymentToken: generatePublicPaymentToken(),
+          ...(() => {
+            const publicPaymentToken = generatePublicPaymentToken();
+            return {
+              publicPaymentToken,
+              publicPaymentTokenHash: hashToken(publicPaymentToken),
+            };
+          })(),
           issuedSnapshot: null,
           updatedAt: new Date(),
         })
@@ -209,10 +219,11 @@ export class InvoiceRepository {
   }
 
   async findByPublicToken(token: string) {
+    const tokenHash = hashToken(token);
     const [invoice] = await this.db
       .select()
       .from(invoices)
-      .where(eq(invoices.publicPaymentToken, token))
+      .where(eq(invoices.publicPaymentTokenHash, tokenHash))
       .limit(1);
     return invoice ?? null;
   }
@@ -319,7 +330,29 @@ export class InvoiceRepository {
       )
       .orderBy(desc(auditEvents.createdAt));
 
-    return { invoice, lines, customer, payments, timeline };
+    const invoiceReceipts = await this.db
+      .select({
+        id: receipts.id,
+        number: receipts.number,
+        amount: receipts.amount,
+        currency: receipts.currency,
+        tokenDecimals: receipts.tokenDecimals,
+        publicToken: receipts.publicToken,
+        issuedAt: receipts.issuedAt,
+        snapshot: receipts.snapshot,
+      })
+      .from(receipts)
+      .where(eq(receipts.invoiceId, id))
+      .orderBy(desc(receipts.issuedAt));
+
+    return {
+      invoice,
+      lines,
+      customer,
+      payments,
+      timeline,
+      receipts: invoiceReceipts,
+    };
   }
 
   async updateDraft(
@@ -631,7 +664,13 @@ export class InvoiceRepository {
           dueDate: invoice.dueDate,
           notes: invoice.notes,
           memo: invoice.memo ? `Copy of ${invoice.number}: ${invoice.memo}` : `Copy of ${invoice.number}`,
-          publicPaymentToken: generatePublicPaymentToken(),
+          ...(() => {
+            const publicPaymentToken = generatePublicPaymentToken();
+            return {
+              publicPaymentToken,
+              publicPaymentTokenHash: hashToken(publicPaymentToken),
+            };
+          })(),
           issuedSnapshot: null,
           updatedAt: new Date(),
         })

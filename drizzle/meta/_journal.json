@@ -15,6 +15,13 @@
       "when": 1783931588484,
       "tag": "0001_sparkling_hellion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783932371849,
+      "tag": "0002_gifted_wallflower",
+      "breakpoints": true
     }
   ]
 }

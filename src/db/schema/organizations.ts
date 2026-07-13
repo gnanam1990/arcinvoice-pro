@@ -13,6 +13,10 @@ export const organizations = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
+    /** Optional settlement / display wallet for public invoices. */
+    merchantWalletAddress: text("merchant_wallet_address"),
+    /** Optional short public brand line shown on pay pages. */
+    brandingTagline: text("branding_tagline"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

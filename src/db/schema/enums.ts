@@ -53,4 +53,7 @@ export const auditActionEnum = pgEnum("audit_action", [
   "cancelled",
   "reminder_sent",
   "receipt_issued",
+  "link_copied",
+  "public_viewed",
+  "receipt_created",
 ]);

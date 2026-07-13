@@ -19,13 +19,17 @@ import {
   invoiceLines,
   invoices,
   members,
+  onchainPayments,
   organizations,
   paymentIntents,
   receipts,
   reminders,
 } from "../src/db/schema";
 import { calculateInvoiceTotals, calculateLineAmount } from "../src/lib/domain/amounts";
-import { generatePublicPaymentToken } from "../src/lib/domain/public-token";
+import {
+  generatePublicPaymentToken,
+  hashToken,
+} from "../src/lib/domain/public-token";
 
 const DEMO = {
   organizationSlug: "demo-northline",
@@ -60,6 +64,8 @@ async function main() {
       .values({
         name: DEMO.organizationName,
         slug: DEMO.organizationSlug,
+        merchantWalletAddress: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        brandingTagline: "Demo studio billing",
         updatedAt: new Date(),
       })
       .returning();
@@ -299,7 +305,13 @@ async function main() {
           dueDate: seed.dueDate,
           notes: seed.notes,
           memo: DEMO.label,
-          publicPaymentToken: generatePublicPaymentToken(),
+          ...(() => {
+            const publicPaymentToken = generatePublicPaymentToken();
+            return {
+              publicPaymentToken,
+              publicPaymentTokenHash: hashToken(publicPaymentToken),
+            };
+          })(),
           issuedSnapshot: issued,
           issuedAt: seed.status === "draft" ? null : new Date(),
           updatedAt: new Date(),
@@ -379,13 +391,52 @@ async function main() {
         .returning();
 
       if (intent) {
+        const [onchain] = await tx
+          .insert(onchainPayments)
+          .values({
+            paymentIntentId: intent.id,
+            network: "arc-testnet",
+            txHash:
+              "0xdemodemo000000000000000000000000000000000000000000000000000001",
+            amount: 100_000,
+            status: "settled",
+            confirmations: 12,
+            payerAddress: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            settledAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+
+        const receiptToken = generatePublicPaymentToken();
         await tx.insert(receipts).values({
           organizationId: org.id,
           invoiceId: partial.id,
           paymentIntentId: intent.id,
+          onchainPaymentId: onchain?.id ?? null,
           number: "DEMO-RCT-0001",
           amount: 100_000,
           currency: "USD",
+          tokenDecimals: 2,
+          publicToken: receiptToken,
+          publicTokenHash: hashToken(receiptToken),
+          snapshot: {
+            invoiceNumber: partial.number,
+            amount: 100_000,
+            currency: "USD",
+            asset: "USD",
+            tokenDecimals: 2,
+            network: "arc-testnet",
+            txHash:
+              "0xdemodemo000000000000000000000000000000000000000000000000000001",
+            finalizedAt: new Date().toISOString(),
+            payerAddress: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            merchantAddress: org.merchantWalletAddress,
+            memo: DEMO.label,
+            remainingBalance: Math.max(0, partial.amountDue),
+            paymentIntentId: intent.id,
+            onchainPaymentId: onchain?.id ?? null,
+            capturedAt: new Date().toISOString(),
+          },
           issuedAt: new Date(),
           updatedAt: new Date(),
         });

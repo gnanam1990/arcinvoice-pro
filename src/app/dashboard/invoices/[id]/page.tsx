@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { InvoiceActions } from "@/components/invoices/invoice-actions";
+import { PublicInvoiceActions } from "@/components/invoices/public-invoice-actions";
+import { InvoiceReceiptsList } from "@/components/invoices/invoice-receipts-list";
 import { OrgUnavailable } from "@/components/dashboard/org-guard";
 import { loadInvoiceDetail } from "@/lib/dashboard-data";
 import {
@@ -30,7 +32,8 @@ export default async function InvoiceDetailPage({
     );
   }
 
-  const { invoice, lines, customer, payments, timeline } = loaded.detail;
+  const { invoice, lines, customer, payments, timeline, receipts } =
+    loaded.detail;
   const snapshot = invoice.issuedSnapshot;
   const showSnapshot = Boolean(snapshot) && invoice.status !== "draft";
 
@@ -58,6 +61,14 @@ export default async function InvoiceDetailPage({
         invoiceId={invoice.id}
         status={invoice.status}
         number={invoice.number}
+        publicPaymentToken={invoice.publicPaymentToken}
+      />
+
+      <PublicInvoiceActions
+        invoiceId={invoice.id}
+        status={invoice.status}
+        publicPaymentToken={invoice.publicPaymentToken}
+        preview
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -246,6 +257,8 @@ export default async function InvoiceDetailPage({
           )}
         </div>
       </section>
+
+      <InvoiceReceiptsList receipts={receipts} />
     </div>
   );
 }

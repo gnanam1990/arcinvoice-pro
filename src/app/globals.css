@@ -289,3 +289,49 @@ body {
 .skip-link:focus {
   top: var(--space-4);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Print / A4 — public invoice & receipt                                      */
+/* Readable in black & white; hide chrome and interactive controls            */
+/* -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  .print\:hidden,
+  header:not(article header),
+  nav,
+  aside,
+  .skip-link {
+    display: none !important;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  article {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+

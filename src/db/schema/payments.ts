@@ -56,12 +56,14 @@ export const onchainPayments = pgTable(
     paymentIntentId: uuid("payment_intent_id")
       .notNull()
       .references(() => paymentIntents.id, { onDelete: "cascade" }),
-    network: text("network").notNull().default("demo"),
-    /** Optional future tx hash — not populated by wallet logic yet. */
+    network: text("network").notNull().default("arc-testnet"),
+    /** Optional future tx hash — not populated by wallet execution yet. */
     txHash: text("tx_hash"),
     amount: integer("amount").notNull(),
     status: onchainPaymentStatusEnum("status").notNull().default("pending"),
     confirmations: integer("confirmations").notNull().default(0),
+    payerAddress: text("payer_address"),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

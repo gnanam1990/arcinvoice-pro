@@ -88,8 +88,13 @@ export const invoices = pgTable(
     dueDate: date("due_date"),
     notes: text("notes"),
     memo: text("memo"),
-    /** Random unique public token for payment pages (no auth). */
+    /**
+     * Random unique public token for payment pages (URL secret).
+     * High entropy; also stored as SHA-256 hash for indexed lookup.
+     */
     publicPaymentToken: text("public_payment_token").notNull(),
+    /** SHA-256 hex of publicPaymentToken — preferred lookup key. */
+    publicPaymentTokenHash: text("public_payment_token_hash").notNull(),
     /** Immutable customer + line snapshot after issue; null while draft. */
     issuedSnapshot: jsonb("issued_snapshot").$type<InvoiceSnapshot | null>(),
     issuedAt: timestamp("issued_at", { withTimezone: true }),
@@ -108,6 +113,9 @@ export const invoices = pgTable(
     ),
     uniqueIndex("invoices_public_payment_token_uidx").on(
       table.publicPaymentToken,
+    ),
+    uniqueIndex("invoices_public_payment_token_hash_uidx").on(
+      table.publicPaymentTokenHash,
     ),
     index("invoices_org_status_idx").on(table.organizationId, table.status),
     index("invoices_customer_idx").on(table.customerId),

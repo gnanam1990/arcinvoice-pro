@@ -15,6 +15,7 @@ type InvoiceActionsProps = {
   invoiceId: string;
   status: string;
   number: string;
+  publicPaymentToken?: string | null;
 };
 
 export function InvoiceActions({
